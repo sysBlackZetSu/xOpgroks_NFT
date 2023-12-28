@@ -36,9 +36,6 @@ async function isOutOfStock(categoryId) {
  * @returns
  */
 async function callMint(categoryId, valueToSend) {
-    const accounts = await web3.eth.getAccounts();
-    const senderAddress = accounts[0];
-
     try {
         const outOfStock = await isOutOfStock(categoryId);
         if (outOfStock) {
@@ -47,14 +44,14 @@ async function callMint(categoryId, valueToSend) {
         }
 
         // Dynamically estimate gas for the transaction
-        const gas = await contract.methods.mint(categoryId).estimateGas({ from: senderAddress });
+        const gas = await contract.methods.mint(categoryId).estimateGas({ from: account.address });
 
         // Set a custom gas price or use the network gas price
         const gasPrice = await web3.eth.getGasPrice();
 
         // Call the mint function with dynamic gas parameters
         const result = await contract.methods.mint(categoryId).send({
-            from: senderAddress,
+            from: account.address,
             value: web3.utils.toWei(valueToSend.toString(), 'ether'),
             gas,
             gasPrice,
@@ -74,7 +71,6 @@ async function checkForSuccessfulMinting() {
         const currentBlock = await web3.eth.getBlockNumber();
 
         if (currentBlock > lastCheckedBlock) {
-            console.log(`[checkForSuccessfulMinting] New blocks detected from block ${lastCheckedBlock + 1} to ${currentBlock}`);
             const block = await web3.eth.getBlock(currentBlock, true);
 
             if (block && block.transactions && block.transactions.length > 0) {
@@ -94,4 +90,4 @@ async function checkForSuccessfulMinting() {
 }
 
 // Run
-setInterval(checkForSuccessfulMinting, 10000); /* Run every 10 seconds */
+setInterval(checkForSuccessfulMinting, 1000); /* Run every 1 seconds */
