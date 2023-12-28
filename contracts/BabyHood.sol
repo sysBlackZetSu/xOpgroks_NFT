@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.6;
 
-import "@openzeppelin/contracts/v4/access/Ownable.sol";
-import "@openzeppelin/contracts/v4/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/v4/security/Pausable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract NFT is ERC721Enumerable, Ownable, Pausable, ReentrancyGuard {
+contract BabyHood is ERC721Enumerable, Ownable, Pausable, ReentrancyGuard {
   using Strings for uint256;
 
   mapping(address => bool) public isMinted;
@@ -25,13 +25,13 @@ contract NFT is ERC721Enumerable, Ownable, Pausable, ReentrancyGuard {
   event Mint(address indexed user, uint256 indexed tokenId);
 
   constructor(
-    string memory _name,
-    string memory _symbol,
-    address _adminAddress,
-    uint256 _mintFee
-  ) ERC721(_name, _symbol) {
-    adminAddress = _adminAddress;
-    mintFee = _mintFee;
+    // string memory _name,
+    // string memory _symbol,
+    // address _adminAddress,
+    // uint256 _mintFee
+  ) ERC721("BabyHood", "BHD") {
+    adminAddress = 0xacFDE89969a32aA3af8A80734b6C28AF95E402f2;
+    mintFee = 500000000000000000;
     isReadyToMint = false;
 
     _counters[1] = 0;
@@ -88,8 +88,8 @@ contract NFT is ERC721Enumerable, Ownable, Pausable, ReentrancyGuard {
     address sender = msg.sender;
     require(categoryId > 0 && categoryId <= NUMBER_OF_CATEGORIES, "Invalid categoryId");
     require(_counters[categoryId] < MAX_SUPPLY[categoryId], "Amount exceeded");
-    require(isReadyToMint, "NFT: hasn't started yet");
-    require(!isMinted[sender], "NFT: already minted");
+    require(isReadyToMint, "BabyHood: hasn't started yet");
+    require(!isMinted[sender], "BabyHood: already minted");
     require(mintFee == msg.value, "mintFee != msg.value");
 
     (bool success, ) = adminAddress.call{ value: msg.value }("");
