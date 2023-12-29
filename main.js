@@ -1,31 +1,34 @@
-const Web3 = require('web3');
-const web3 = new Web3('your_web3_provider'); // Replace with your Infura provider
-const privateKey = 'your_private_key';
-let lastCheckedBlock = 0;
+const { Web3 } = require('web3');
+const web3 = new Web3('http://127.0.0.1:8545'); // Replace with your Infura provider
+
+/* config wallet */
+const walletKeys = [
+    {
+        privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+        address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+    },
+    {
+        privateKey: '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d',
+        address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+    },
+    {
+        privateKey: '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a',
+        address: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
+    }
+]
 
 const contractABI = require('./ABI.json');
 
-/* Connect to the contract for minting tokens */
-const contractAddress = '0x883fc80b99fde43fa8588c41bbd78f6214c5e657'; // Token: OPGROKS
+/* Connect smart contract */
+const contractAddress = '0x883fc80b99fde43fa8588c41bbd78f6214c5e657'; // Contract mint
 const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-/* Connect to the wallet */
-const account = web3.eth.accounts.privateKeyToAccount(privateKey);
-web3.eth.accounts.wallet.add(account);
 
-/**
- * Check if the specified category is out of stock
- * @param {*} categoryId 
- * @returns 
- */
-async function isOutOfStock(categoryId) {
-    try {
-        const result = await contract.methods.isOutOfStock(categoryId).call();
-        return result;
-    } catch (error) {
-        console.error('[isOutOfStock] ', error);
-        return false;
-    }
+/* Connect to the wallet */
+function connectWallet(wallet) {
+    const account = web3.eth.accounts.privateKeyToAccount(wallet.privateKey);
+    web3.eth.accounts.wallet.add(account);
+    return account;
 }
 
 // Minting function
@@ -35,59 +38,51 @@ async function isOutOfStock(categoryId) {
  * @param {*} valueToSend [price of one NFT]
  * @returns
  */
-async function callMint(categoryId, valueToSend) {
-    try {
-        const outOfStock = await isOutOfStock(categoryId);
-        if (outOfStock) {
-            console.log('[callMint]: Category is out of stock.');
-            return;
-        }
+async function mintMulti() {
 
+    for (let index = 0; index < walletKeys.length; index++) {
+        const wallet = walletKeys[index];
+        const accountTmp = connectWallet(wallet);
         // Dynamically estimate gas for the transaction
-        const gas = await contract.methods.mint(categoryId).estimateGas({ from: account.address });
-
+        const gas = await contract.methods.mint('1').estimateGas({ from: accountTmp.address });
         // Set a custom gas price or use the network gas price
         const gasPrice = await web3.eth.getGasPrice();
+        try {
+            // Call the mint function with dynamic gas parameters
+            const result = await contract.methods.mint('1').send({
+                from: accountTmp.address,
+                value: web3.utils.toWei('0.01'.toString(), 'ether'),
+                gas,
+                gasPrice,
+            });
 
-        // Call the mint function with dynamic gas parameters
-        const result = await contract.methods.mint(categoryId).send({
-            from: account.address,
-            value: web3.utils.toWei(valueToSend.toString(), 'ether'),
-            gas,
-            gasPrice,
-        });
-
-        console.log('Minting successful. Transaction hash:', result.transactionHash);
-    } catch (error) {
-        console.error('[callMint] :', error);
-    }
-}
-
-/**
- * Check mint
- */
-async function checkForSuccessfulMinting() {
-    try {
-        const currentBlock = await web3.eth.getBlockNumber();
-
-        if (currentBlock > lastCheckedBlock) {
-            const block = await web3.eth.getBlock(currentBlock, true);
-
-            if (block && block.transactions && block.transactions.length > 0) {
-                for (const tx of block.transactions) {
-                    const receipt = await web3.eth.getTransactionReceipt(tx.hash);
-
-                    if (receipt && receipt.status) {
-                        await callMint('1', '0.5');
-                    }
-                }
-            }
-            lastCheckedBlock = currentBlock;
+            console.log('Minting successful. Transaction hash:', result);
+        } catch (error) {
+            console.error('[callMint] :', error);
         }
-    } catch (error) {
-        console.error('[checkForSuccessfulMinting] Error:', error);
     }
 }
 
 // Run
-setInterval(checkForSuccessfulMinting, 1000); /* Run every 1 seconds */
+mintMulti();
+
+
+
+async function getWalletInfo(wallet) {
+    try {
+        const balance = await web3.eth.getBalance(wallet.address);
+        return web3.utils.fromWei(balance, 'ether');
+    } catch (error) {
+        console.error(`Lỗi khi kiểm tra thông tin của địa chỉ ${wallet.address}:`, error);
+    }
+}
+
+async function getAllWalletsInfo() {
+    for (const wallet of walletKeys) {
+        const balance = await getWalletInfo(wallet);
+        console.log('address : ', wallet.address);
+        console.log('balance: ', balance);
+    }
+}
+
+getAllWalletsInfo().then();

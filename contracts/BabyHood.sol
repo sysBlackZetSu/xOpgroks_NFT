@@ -31,7 +31,7 @@ contract BabyHood is ERC721Enumerable, Ownable, Pausable, ReentrancyGuard {
     // uint256 _mintFee
   ) ERC721("BabyHood", "BHD") {
     adminAddress = 0xacFDE89969a32aA3af8A80734b6C28AF95E402f2;
-    mintFee = 500000000000000000;
+    mintFee = 1000000000000000;
     isReadyToMint = false;
 
     _counters[1] = 0;
